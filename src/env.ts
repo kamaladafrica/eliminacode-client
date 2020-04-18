@@ -1,3 +1,3 @@
 export const env = {
-    baseUrl: '/api'
+    baseUrl: process.env.REACT_APP_BASE_PATH || '/api'
 }
