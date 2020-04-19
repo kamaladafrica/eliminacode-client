@@ -1,5 +1,6 @@
 import React from 'react'
 import TextAttesa from './TextAttesa'
+import { minutiToText } from './utils'
 
 type Props = {
   numero: number
@@ -7,6 +8,8 @@ type Props = {
   fila: number
   tempo: number
   alert: boolean
+  expiring: boolean
+  tempoRimasto: number
   onAnnulla: () => void
 }
 
@@ -16,16 +19,18 @@ const QRCode: React.FC<Props> = ({
   fila,
   tempo,
   alert,
+  expiring,
+  tempoRimasto,
   onAnnulla,
 }) => {
   return (
     <div
       className="card text-center shadow-lg rounded-lg border-0"
-      style={{ maxWidth: '250px' }}
+      style={{ maxWidth: '300px' }}
     >
       <h1
         className={
-          'card-header p-2 font-weight-bold display-3' +
+          'card-header p-2 font-weight-bold display-4' +
           (alert && ' bg-danger text-white')
         }
       >
@@ -61,13 +66,22 @@ const QRCode: React.FC<Props> = ({
         </div>
       ) : (
         <div className="card-footer text-danger font-weight-bold">
-          {fila ? (
+          {fila > 0 ? (
             <span>
               Hai solo {fila} {fila > 1 ? 'persone' : 'persona'} davanti,
               affrettati!
             </span>
           ) : (
-            <span>E' il tuo turno, non fare tardi!</span>
+            <>
+              <span>E' il tuo turno, non fare tardi!</span>
+              {expiring && (
+                <small>
+                  <br></br>
+                  (la prenotazione scadrà tra circa{' '}
+                  {minutiToText(tempoRimasto)})
+                </small>
+              )}
+            </>
           )}
         </div>
       )}

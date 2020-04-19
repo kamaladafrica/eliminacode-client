@@ -1,89 +1,181 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "./api";
 import { Stats, Tag } from "./api";
+import { env } from "./env";
+import { getPosizione } from "./utils";
 
 const TAG_KEY = "tag";
-const DELAY = 5000;
+const STATS_DELAY = env.fetchStatsDelay;
+const CHECK_DELAY = env.fetchTagDelay;
 
-type TagHookReturn = [
-  Tag | null,
-  Stats | null,
-  Stats | null,
-  () => Promise<Tag>,
-  () => void
-];
+type TagHookReturn = [State, TagState, () => void, () => void];
 
-const shallowEq = (a: any, b: any): boolean =>
-  a === b ||
-  (a != null && b != null && Object.keys(a).every((k) => a[k] === b[k]));
+export type TagState = {
+  key: string;
+  progressivo: number;
+  posizione: number;
+  tempoStimato: number;
+  tempoRimasto: number;
+  qrCodeImageUrl: string;
+  loaded: boolean;
+  expiring: boolean;
+};
+
+export type State = {
+  fila: number[];
+  posizione: number;
+  tempoMedio: number;
+  tempoStimato: number;
+  tempoLimite: Date;
+  loaded: boolean;
+};
+
+const EMPTY_STATE: State = {
+  fila: [],
+  loaded: false,
+  posizione: 0,
+  tempoLimite: new Date(),
+  tempoMedio: 0,
+  tempoStimato: 0,
+};
+
+const EMPTY_TAG_STATE: TagState = {
+  loaded: false,
+  posizione: 0,
+  tempoStimato: 0,
+  progressivo: 0,
+  qrCodeImageUrl: "",
+  tempoRimasto: 0,
+  key: "",
+  expiring: false,
+};
+
+const toState = ({ fila, tempoStimato, tempoLimite }: Stats): State => ({
+  posizione: fila.length,
+  tempoMedio: tempoStimato,
+  tempoStimato: fila.length * tempoStimato,
+  tempoLimite,
+  fila: fila,
+  loaded: true,
+});
+
+const toTagState = (
+  { fila, tempoMedio, tempoLimite }: State,
+  { progressivo, key }: Tag,
+  qrCodeImageUrl: string
+): TagState => {
+  const posizione = getPosizione(progressivo, fila);
+  const expiring = posizione < 0;
+  const tempoRimasto = (tempoLimite.getTime() - new Date().getTime()) / 60000; // minuti
+  return {
+    loaded: true,
+    key,
+    progressivo,
+    qrCodeImageUrl,
+    posizione,
+    tempoStimato: posizione * tempoMedio,
+    tempoRimasto,
+    expiring,
+  };
+};
+
+const updateTagState = (
+  tagState: TagState,
+  { fila, tempoMedio, tempoLimite }: State
+): TagState => {
+  const posizione = getPosizione(tagState.progressivo, fila);
+  const expiring = posizione < 0;
+  const tempoRimasto = (tempoLimite.getTime() - new Date().getTime()) / 60000; // minuti
+  return {
+    ...tagState,
+    expiring,
+    posizione,
+    tempoStimato: posizione * tempoMedio,
+    tempoRimasto: tempoRimasto,
+  };
+};
 
 export const useTag = (): TagHookReturn => {
-  const [tag, setTag] = useState<Tag | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [tagStats, setTagStats] = useState<Stats | null>(null);
+  const [state, setState] = useState(EMPTY_STATE);
+  const [tagState, setTagState] = useState(EMPTY_TAG_STATE);
 
-  const clearTag = () => {
-    setTag(null);
+  const clearTagState = () => {
+    setTagState(EMPTY_TAG_STATE);
     localStorage.removeItem(TAG_KEY);
   };
 
-  const saveTag = (tag: Tag) => {
-    setTag(tag);
+  const saveTagState = (state: State, tag: Tag, qrCodeImageUrl: string) => {
+    setTagState(toTagState(state, tag, qrCodeImageUrl));
     localStorage.setItem(TAG_KEY, tag.key);
   };
 
+  const fetchStats = async () => {
+    const stats = await api.stats();
+    const state = toState(stats);
+    setState(state);
+    setTagState((tagState) =>
+      tagState.loaded ? updateTagState(tagState, state) : tagState
+    );
+    return state;
+  };
+
   useEffect(() => {
-    const fetchStats = () => {
-      api.stats().then((s) => {
-        if (!shallowEq(stats, s)) {
-          setStats(s);
-        }
-      });
-      console.log(tag);
-      if (tag) {
-        api.stats(tag.key).then((s) => {
-          if (s == null) {
-            clearTag();
-          } else if (!shallowEq(stats, s)) {
-            setTagStats(s);
-          }
-        });
-      }
-    };
-
     fetchStats();
-    const interval = setInterval(fetchStats, DELAY);
-
+    const interval = setInterval(fetchStats, STATS_DELAY);
     return () => clearInterval(interval);
-  }, [stats, tag]);
+  }, []);
+
+  useEffect(() => {
+    if (tagState.loaded) {
+      const checkTag = () => {
+        api
+          .checkTag(tagState.key)
+          .catch(() => clearTagState())
+          .then(() => fetchStats());
+      };
+      const interval = setInterval(checkTag, CHECK_DELAY);
+      return () => clearInterval(interval);
+    }
+  }, [tagState.key, tagState.loaded]);
 
   useEffect(() => {
     const fetchTag = async () => {
       const key = localStorage.getItem(TAG_KEY);
-      if (key && !tag) {
+      if (key) {
         try {
           const tag = await api.fetchTag(key);
-          saveTag(tag);
-        } catch (e) {
-          clearTag();
+          const url = tag && (await api.qrCodeImageUrl(tag.key));
+          url && saveTagState(state, tag, url);
+        } catch (error) {
+          clearTagState();
         }
       }
     };
-    fetchTag();
-  }, [tag]);
+
+    if (state.loaded && !tagState.loaded) {
+      fetchTag();
+    }
+  }, [state, tagState.loaded]);
 
   const newTag = useCallback(async () => {
-    const tag = await api.newTag();
-    saveTag(tag);
-    return tag;
-  }, []);
+    try {
+      const tag = await api.newTag();
+      const url = tag && (await api.qrCodeImageUrl(tag.key));
+      url && saveTagState(state, tag, url);
+      fetchStats();
+    } catch (error) {
+      clearTagState();
+    }
+  }, [state]);
 
   const annullaTag = useCallback(async () => {
-    if (tag) {
-      await api.annullaTag(tag.key);
+    if (tagState.loaded) {
+      try {
+        await api.annullaTag(tagState.key);
+        clearTagState();
+      } catch (error) {}
     }
-    clearTag();
-  }, [tag]);
+  }, [tagState.key, tagState.loaded]);
 
-  return [tag, stats, tagStats, newTag, annullaTag];
+  return [state, tagState, newTag, annullaTag];
 };
