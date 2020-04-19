@@ -1,16 +1,12 @@
 import React from 'react'
 import Announce from './Announce'
 import './App.css'
-import { env } from './env'
 import QRCode from './QRCode'
-import { useTag } from './useTag'
-import { isAlert, stimaTotale } from './utils'
-import { Stats, Tag } from './api'
-
-const qrCodeUrl = (baseUrl: string, key: string) => `${baseUrl}/tags/${key}.png`
+import { State, TagState, useTag } from './useTag'
+import { isAlert } from './utils'
 
 function App() {
-  const [tag, stats, tagStats, newTag, annullaTag] = useTag()
+  const [state, tagState, newTag, annullaTag] = useTag()
 
   const spinner = () => (
     <div className="spinner-border">
@@ -18,33 +14,40 @@ function App() {
     </div>
   )
 
-  const qrcode = (stats: Stats, tag: Tag) => (
+  const qrcode = ({
+    tempoStimato,
+    posizione,
+    progressivo,
+    qrCodeImageUrl,
+  }: TagState) => (
     <QRCode
-      tempo={stimaTotale(stats)}
-      fila={stats.fila}
-      alert={isAlert(stats)}
-      numero={tag.progressivo}
-      url={qrCodeUrl(env.baseUrl, tag.key)}
+      tempo={tempoStimato}
+      fila={posizione}
+      alert={isAlert(posizione, tempoStimato)}
+      numero={progressivo}
+      url={qrCodeImageUrl}
+      expiring={posizione < 0}
+      tempoRimasto={tagState.tempoRimasto}
       onAnnulla={() => annullaTag()}
     />
   )
 
-  const announce = (stats: Stats) => (
+  const announce = ({ posizione, tempoStimato }: State) => (
     <Announce
-      fila={stats.fila}
-      tempo={stimaTotale(stats)}
-      alert={isAlert(stats)}
+      fila={posizione}
+      tempo={tempoStimato}
+      alert={isAlert(posizione, tempoStimato)}
       onStacca={() => newTag()}
     />
   )
 
-  const showSpinner = !stats || (tag && !tagStats)
+  const showSpinner = !state.loaded && !tagState.loaded
 
   return (
     <div className="app-container h-100 d-flex flex-column align-items-center pt-3">
       {showSpinner && spinner()}
-      {!tag && stats && announce(stats)}
-      {tag && tagStats && qrcode(tagStats, tag)}
+      {state.loaded && !tagState.loaded && announce(state)}
+      {tagState.loaded && qrcode(tagState)}
     </div>
   )
 }

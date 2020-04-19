@@ -1,21 +1,35 @@
 import { Stats } from "./api";
+import { env } from "./env";
 
-export const ALERT_TIME = 30; // minuti
-export const ALERT_FILA = 5; // persone
+export const ALERT_TIME = env.alertTempo; // minuti
+export const ALERT_FILA = env.alertFila; // persone
 
 export const minutiToText = (min: number): string => {
   const h = Math.floor(min / 60);
-  const m = min % 60;
+  const m = Math.ceil(min % 60);
   let res = "";
   if (h) {
     res += `${h} ${h === 1 ? "ora" : "ore"} e `;
   }
-  res += `${m} minuti`;
+  res += `${m} ${m === 1 ? "minuto" : "minuti"}`;
   return res;
 };
 
-export const isAlert = (stats: Stats): boolean =>
-  stimaTotale(stats) < ALERT_TIME || stats.fila <= ALERT_FILA;
+export const getPosizione = (progressivo: number, fila: number[]) =>
+  fila.indexOf(progressivo);
 
-export const stimaTotale = ({ fila, tempoStimato }: Stats): number =>
-  tempoStimato * (fila || 1);
+export const isAlert = (posizione: number, tempoStimato: number): boolean =>
+  tempoStimato < ALERT_TIME || posizione <= ALERT_FILA;
+
+export const stimaTotale = (
+  progressivo: number,
+  { fila, tempoStimato }: Stats
+): number => tempoStimato * getPosizione(progressivo, fila);
+
+export const toDataURL = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
