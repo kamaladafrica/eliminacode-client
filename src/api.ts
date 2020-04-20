@@ -15,7 +15,7 @@ export const fetchTag = async (key: string) => {
 
 export const checkTag = async (key: string) => {
   const response = await fetch(`${env.baseUrl}/tags/${key}/check`);
-  await bodyOf(response, async () => {})
+  await bodyOf(response, async () => {});
 };
 
 export const stats = async () => {
@@ -40,6 +40,7 @@ const toTag = (json: any): Tag => ({
   key: json.key,
   progressivo: json.progressivo,
   staccato: new Date(json.staccato),
+  qrCodeImageUrl: json.qrCodeImageUrl,
 });
 
 const toStats = (json: any): Stats => ({
@@ -52,6 +53,7 @@ export interface Tag {
   key: string;
   progressivo: number;
   staccato: Date;
+  qrCodeImageUrl: string;
 }
 
 export interface Stats {

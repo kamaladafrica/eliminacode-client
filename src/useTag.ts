@@ -61,8 +61,7 @@ const toState = ({ fila, tempoStimato, tempoLimite }: Stats): State => ({
 
 const toTagState = (
   { fila, tempoMedio, tempoLimite }: State,
-  { progressivo, key }: Tag,
-  qrCodeImageUrl: string
+  { progressivo, key, qrCodeImageUrl }: Tag
 ): TagState => {
   const posizione = getPosizione(progressivo, fila);
   const expiring = posizione < 0;
@@ -104,8 +103,8 @@ export const useTag = (): TagHookReturn => {
     localStorage.removeItem(TAG_KEY);
   };
 
-  const saveTagState = (state: State, tag: Tag, qrCodeImageUrl: string) => {
-    setTagState(toTagState(state, tag, qrCodeImageUrl));
+  const saveTagState = (state: State, tag: Tag) => {
+    setTagState(toTagState(state, tag));
     localStorage.setItem(TAG_KEY, tag.key);
   };
 
@@ -144,8 +143,7 @@ export const useTag = (): TagHookReturn => {
       if (key) {
         try {
           const tag = await api.fetchTag(key);
-          const url = tag && (await api.qrCodeImageUrl(tag.key));
-          url && saveTagState(state, tag, url);
+          tag && saveTagState(state, tag);
         } catch (error) {
           clearTagState();
         }
@@ -160,8 +158,7 @@ export const useTag = (): TagHookReturn => {
   const newTag = useCallback(async () => {
     try {
       const tag = await api.newTag();
-      const url = tag && (await api.qrCodeImageUrl(tag.key));
-      url && saveTagState(state, tag, url);
+      tag && saveTagState(state, tag);
       fetchStats();
     } catch (error) {
       clearTagState();
@@ -172,6 +169,7 @@ export const useTag = (): TagHookReturn => {
     if (tagState.loaded) {
       try {
         await api.annullaTag(tagState.key);
+        fetchStats();
         clearTagState();
       } catch (error) {}
     }
