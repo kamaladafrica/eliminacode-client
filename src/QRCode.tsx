@@ -1,17 +1,17 @@
-import React from 'react'
-import TextAttesa from './TextAttesa'
-import { minutiToText } from './utils'
+import React from "react";
+import TextAttesa from "./TextAttesa";
+import { minutiToText } from "./utils";
 
 type Props = {
-  numero: number
-  url: string
-  fila: number
-  tempo: number
-  alert: boolean
-  expiring: boolean
-  tempoRimasto: number
-  onAnnulla: () => void
-}
+  numero: number;
+  url: string;
+  fila: number;
+  tempo: number;
+  alert: boolean;
+  expiring: boolean;
+  tempoRimasto: number;
+  onAnnulla: () => void;
+};
 
 const QRCode: React.FC<Props> = ({
   numero,
@@ -26,12 +26,12 @@ const QRCode: React.FC<Props> = ({
   return (
     <div
       className="card text-center shadow-lg rounded-lg border-0"
-      style={{ maxWidth: '300px' }}
+      style={{ maxWidth: "300px" }}
     >
       <h1
         className={
-          'card-header p-2 font-weight-bold display-4' +
-          (alert && ' bg-danger text-white')
+          "card-header p-2 font-weight-bold display-4" +
+          (alert && " bg-danger text-white")
         }
       >
         {numero}
@@ -39,14 +39,14 @@ const QRCode: React.FC<Props> = ({
       <div className="bg-white">
         <img
           className="card-img-top m-auto my-2"
-          style={{ width: 'auto' }}
+          style={{ width: "auto" }}
           src={url}
           alt="qrcode"
         />
       </div>
       <div className="card-body">
         <h5 className="card-title">
-          Il tuo numero è il{' '}
+          Il tuo numero è il{" "}
           <span id="progressivo" className="font-weight-bold">
             {numero}
           </span>
@@ -68,8 +68,10 @@ const QRCode: React.FC<Props> = ({
         <div className="card-footer text-danger font-weight-bold">
           {fila > 0 ? (
             <span>
-              Hai solo {fila} {fila > 1 ? 'persone' : 'persona'} davanti,
+              Hai solo {fila} {fila > 1 ? "persone" : "persona"} davanti,
               affrettati!
+              <br />
+              <TextAttesa minuti={tempo} />
             </span>
           ) : (
             <>
@@ -77,8 +79,8 @@ const QRCode: React.FC<Props> = ({
               {expiring && (
                 <small>
                   <br></br>
-                  (la prenotazione scadrà tra circa{' '}
-                  {minutiToText(tempoRimasto)})
+                  (la prenotazione scadrà tra circa {minutiToText(tempoRimasto)}
+                  )
                 </small>
               )}
             </>
@@ -86,7 +88,7 @@ const QRCode: React.FC<Props> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default QRCode
+export default QRCode;
