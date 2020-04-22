@@ -3,6 +3,6 @@ export const env = {
   fetchStatsDelay: parseInt(process.env.REACT_APP_FETCH_STATS_DELAY as string),
   fetchTagDelay: parseInt(process.env.REACT_APP_FETCH_TAG_DELAY as string),
   qrCodeSize: 160,
-  alertFila: 10,
-  alertTempo: 30
+  alertFila: 5,
+  alertTempo: 15
 };
