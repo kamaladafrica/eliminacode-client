@@ -126,11 +126,15 @@ export const useTag = (): TagHookReturn => {
 
   useEffect(() => {
     if (tagState.loaded) {
-      const checkTag = () => {
-        api
-          .checkTag(tagState.key)
-          .catch(() => clearTagState())
-          .then(() => fetchStats());
+      const checkTag = async () => {
+        try {
+          await api.checkTag(tagState.key);
+        } catch (error) {
+          if (error.response) {
+            // expired
+            clearTagState();
+          }
+        }
       };
       const interval = setInterval(checkTag, CHECK_DELAY);
       return () => clearInterval(interval);
@@ -143,9 +147,12 @@ export const useTag = (): TagHookReturn => {
       if (key) {
         try {
           const tag = await api.fetchTag(key);
-          tag && saveTagState(state, tag);
+          saveTagState(state, tag);
         } catch (error) {
-          clearTagState();
+          if (error.response) {
+            // notfound o forbidden
+            clearTagState();
+          }
         }
       }
     };
@@ -158,9 +165,10 @@ export const useTag = (): TagHookReturn => {
   const newTag = useCallback(async () => {
     try {
       const tag = await api.newTag();
-      tag && saveTagState(state, tag);
+      saveTagState(state, tag);
       fetchStats();
     } catch (error) {
+      // errore durante la creazione
       clearTagState();
     }
   }, [state]);
