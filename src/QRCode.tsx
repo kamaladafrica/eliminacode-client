@@ -66,16 +66,20 @@ const QRCode: React.FC<Props> = ({
               Hai solo {fila} {fila > 1 ? "persone" : "persona"} davanti,
               affrettati!
               <br />
-              <TextAttesa minuti={tempo} />
+              <span className="blinking">
+                <TextAttesa minuti={tempo} />
+              </span>
             </span>
           ) : (
             <>
               <span>E' il tuo turno, non fare tardi!</span>
               {expiring && (
                 <small>
-                  <br></br>
-                  (la prenotazione scadrà tra circa {minutiToText(tempoRimasto)}
-                  )
+                  <br />
+                  <span className="blinking">
+                    (la prenotazione scadrà tra circa{" "}
+                    {minutiToText(tempoRimasto)})
+                  </span>
                 </small>
               )}
             </>
