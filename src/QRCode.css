@@ -1,0 +1,14 @@
+.card {
+  max-width: 300px;
+}
+
+.card-header {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  padding: 0.1rem;
+}
+
+.card-footer {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}

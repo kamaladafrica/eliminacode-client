@@ -1,6 +1,7 @@
 import React from "react";
 import TextAttesa from "./TextAttesa";
 import { minutiToText } from "./utils";
+import "./QRCode.css";
 
 type Props = {
   numero: number;
@@ -24,14 +25,10 @@ const QRCode: React.FC<Props> = ({
   onAnnulla,
 }) => {
   return (
-    <div
-      className="card text-center shadow-lg rounded-lg border-0"
-      style={{ maxWidth: "300px" }}
-    >
+    <div className="card text-center shadow-lg rounded-lg border-0">
       <h1
         className={
-          "card-header p-2 font-weight-bold display-4" +
-          (alert && " bg-danger text-white")
+          "card-header font-weight-bold" + (alert && " bg-danger text-white")
         }
       >
         {numero}
@@ -51,9 +48,7 @@ const QRCode: React.FC<Props> = ({
             {numero}
           </span>
         </h5>
-        <p className="card-text">
-          Quando richiesto mostra questo codice al personale
-        </p>
+        <p className="card-text">Mostra questo codice al personale</p>
         <button className="btn btn-primary" onClick={() => onAnnulla()}>
           Annulla prenotazione
         </button>
