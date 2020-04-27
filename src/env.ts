@@ -4,5 +4,6 @@ export const env = {
   fetchTagDelay: parseInt(process.env.REACT_APP_FETCH_TAG_DELAY as string),
   qrCodeSize: 160,
   alertFila: 5,
-  alertTempo: 15
+  alertTempo: 15,
+  httpTimeout: 3000, // 3 sec.
 };

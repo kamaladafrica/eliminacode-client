@@ -1,40 +1,23 @@
-import { env } from "./env";
-import { toDataURL } from "./utils";
+import http from "./http";
 
 export const newTag = async () => {
-  const response = await fetch(`${env.baseUrl}/tags`, { method: "POST" });
-  const json = await bodyOf(response);
-  return json && toTag(json);
+  const response = await http.post<Tag>("/tags");
+  return toTag(response.data);
 };
 
 export const fetchTag = async (key: string) => {
-  const response = await fetch(`${env.baseUrl}/tags/${key}`);
-  const json = await bodyOf(response);
-  return json && toTag(json);
+  const response = await http.get<Tag>(`/tags/${key}`);
+  return toTag(response.data);
 };
 
-export const checkTag = async (key: string) => {
-  const response = await fetch(`${env.baseUrl}/tags/${key}/check`);
-  await bodyOf(response, async () => {});
-};
+export const checkTag = (key: string) => http.get<never>(`/tags/${key}/check`);
 
 export const stats = async () => {
-  const response = await fetch(`${env.baseUrl}/stats`);
-  const json = await bodyOf(response);
-  return json && toStats(json);
+  const response = await http.get<Stats>("/stats");
+  return toStats(response.data);
 };
 
-export const qrCodeImageUrl = async (
-  key: string,
-  size: number = env.qrCodeSize
-) => {
-  const response = await fetch(`${env.baseUrl}/tags/${key}.png?s=${size}`);
-  const blob = await bodyOf(response, (r) => r.blob());
-  return blob && toDataURL(blob);
-};
-
-export const annullaTag = (key: string) =>
-  fetch(`${env.baseUrl}/tags/${key}`, { method: "DELETE" });
+export const annullaTag = (key: string) => http.delete<never>(`/tags/${key}`);
 
 const toTag = (json: any): Tag => ({
   key: json.key,
@@ -61,19 +44,3 @@ export interface Stats {
   tempoStimato: number;
   tempoLimite: Date;
 }
-
-export interface TagCheck {
-  isExpired: boolean;
-}
-
-const toJson = (res: Response) => res.json();
-
-const bodyOf = async (response: Response, content = toJson) => {
-  const { ok, status, statusText } = response;
-  if (ok) {
-    return await content(response);
-  } else if (status === 403 || status === 404) {
-    throw new Error(`${status} - ${statusText}`);
-  }
-  return null;
-};
